@@ -1,0 +1,55 @@
+import snowflake.connector as snow
+
+from snowflake.connector.pandas_tools import write_pandas
+
+import argparse 
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-sfuser")
+parser.add_argument("-sfpwd")
+parser.add_argument("-db")
+parser.add_argument("-sch")
+parser.add_argument("-wh")
+parser.add_argument("-acc")
+parser.add_argument("-approvedfolderpath")
+parser.add_argument("-defaultpath")
+args = parser.parse_args()
+print (args.sfuser)
+print (args.folderpath)
+conn = snow.connect(user=args.sfuser,password=args.sfpwd,account=args.acc,warehouse=args.wh,database=args.db,schema=args.sch)
+
+cur = conn.cursor()
+sql = "USE ROLE WMPOVROLE"
+cur.execute(sql)
+
+sql = "CREATE DATABASE IF NOT EXISTS SN_PY_DB"
+cur.execute(sql)
+
+sql = "USE DATABASE SN_PY_DB"
+cur.execute(sql)
+
+print(f'importing csv file')
+import csv
+with open(args.approvedfolderpath) as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    print(f'reading csv file')
+    for row in csv_reader:
+        if (row[1]) in ['y', 'Y', 'yes', 'Yes', 'YES']:
+            print(f'approved file is {row[0]}')
+            file = open('args.defaultpath/{row[0]}', 'r')
+            sql_script_string = file.read()
+            print(f'sql_script_string')
+            file.close()
+            cur.execute(sql_script_string)
+
+print(f'import csv success')
+
+      
+
+cur.close()
+conn.setAutoCommit(false)
+If snow.errors.ProgrammingError as e:
+      conn.rollback()
+End If
+
+conn.close()
